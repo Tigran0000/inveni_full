@@ -1,5 +1,3 @@
-# ui/pages/settings_page.py - Enhanced with responsive design
-
 import os
 import platform
 import tkinter as tk
@@ -104,7 +102,7 @@ class SettingsPage:
         self.SMALL_PADDING = int(5 * self.ui_scale)
         self.LARGE_PADDING = int(20 * self.ui_scale)
         
-        # Define current user and time for logs
+        # Get current username and time using system functions
         self.username = os.getlogin()
         self.current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
@@ -151,21 +149,21 @@ class SettingsPage:
         self.frame.grid_rowconfigure(1, weight=0)  # Backup settings - fixed height
         self.frame.grid_rowconfigure(2, weight=0)  # Logging - fixed height
         self.frame.grid_rowconfigure(3, weight=0)  # System info - fixed height
-        self.frame.grid_rowconfigure(4, weight=0)  # Reset section - fixed height
+        self.frame.grid_rowconfigure(4, weight=0)  # Deleted backups - fixed height
         self.frame.grid_rowconfigure(5, weight=1)  # Empty space - flexible
         
         # Create content sections with card design
         self._create_header_section()
         self._create_backup_section()
+        self._create_deleted_backups_section()
         self._create_logging_section()
         self._create_system_info_section()
-        self._create_reset_section()
         
         # Initial UI update
         self._update_ui()
 
     def _create_header_section(self):
-        """Create responsive header section with title and meta info."""
+        """Create responsive header section with title only."""
         self.header_frame = self._create_card_container(
             self.frame, 
             row=0, 
@@ -176,7 +174,7 @@ class SettingsPage:
         )
         
         # Header content with grid layout
-        self.header_frame.grid_columnconfigure(1, weight=1)
+        self.header_frame.grid_columnconfigure(0, weight=1)
         
         # Page title
         self.title_label = tk.Label(
@@ -187,20 +185,6 @@ class SettingsPage:
             bg=self.colors['card']
         )
         self.title_label.grid(row=0, column=0, sticky='w', padx=self.STANDARD_PADDING, pady=self.STANDARD_PADDING)
-        
-        # Meta info on the right
-        self.meta_frame = tk.Frame(self.header_frame, bg=self.colors['card'])
-        self.meta_frame.grid(row=0, column=1, sticky='e', padx=self.STANDARD_PADDING, pady=self.STANDARD_PADDING)
-        
-        # Current user and time
-        self.meta_label = tk.Label(
-            self.meta_frame,
-            text=f"User: {self.username} | Time: {self.current_time}",
-            font=("Segoe UI", int(9 * self.font_scale)),
-            fg=self.colors['secondary'],
-            bg=self.colors['card']
-        )
-        self.meta_label.pack(side='right')
 
     def _create_backup_section(self):
         """Create backup settings section with improved card design."""
@@ -348,11 +332,92 @@ class SettingsPage:
         
         ToolTip(self.compress_check, "Compress backup files to save disk space")
 
+    def _create_deleted_backups_section(self):
+        """Create section for controlling number of displayed deleted backups."""
+        self.deleted_card = self._create_card_container(
+            self.frame, 
+            row=2, 
+            column=0, 
+            sticky='ew', 
+            padx=self.STANDARD_PADDING, 
+            pady=self.SMALL_PADDING
+        )
+        
+        # Section title
+        self.deleted_title = tk.Label(
+            self.deleted_card,
+            text="Restore View Settings",
+            font=("Segoe UI", int(12 * self.font_scale), "bold"),
+            fg=self.colors['dark'],
+            bg=self.colors['card']
+        )
+        self.deleted_title.pack(anchor='w', padx=self.STANDARD_PADDING, pady=(self.STANDARD_PADDING, self.SMALL_PADDING))
+        
+        # Separator
+        separator = ttk.Separator(self.deleted_card, orient='horizontal')
+        separator.pack(fill='x', padx=self.STANDARD_PADDING, pady=(0, self.SMALL_PADDING))
+        
+        # Content container
+        content = tk.Frame(self.deleted_card, bg=self.colors['card'])
+        content.pack(fill='x', expand=True, padx=self.STANDARD_PADDING, pady=(0, self.STANDARD_PADDING))
+        
+        # Settings grid with 2 columns
+        settings_frame = tk.Frame(content, bg=self.colors['card'])
+        settings_frame.pack(fill='x')
+        settings_frame.grid_columnconfigure(1, weight=1)
+        
+        # Max deleted backups to display
+        max_deleted_label = tk.Label(
+            settings_frame,
+            text="Show Deleted Backups:",
+            font=("Segoe UI", int(11 * self.font_scale)),
+            fg=self.colors['dark'],
+            bg=self.colors['card']
+        )
+        max_deleted_label.grid(row=0, column=0, sticky='w', pady=self.SMALL_PADDING)
+        
+        max_deleted_frame = tk.Frame(settings_frame, bg=self.colors['card'])
+        max_deleted_frame.grid(row=0, column=1, sticky='w', padx=self.STANDARD_PADDING, pady=self.SMALL_PADDING)
+        
+        # Use a spinbox for max deleted backups to show
+        self.max_deleted_var = tk.StringVar(value=str(self.settings.get("max_deleted_backups", 10)))
+        
+        self.max_deleted_spinbox = ttk.Spinbox(
+            max_deleted_frame, 
+            from_=1, 
+            to=50, 
+            textvariable=self.max_deleted_var,
+            width=5,
+            font=("Segoe UI", int(10 * self.font_scale))
+        )
+        self.max_deleted_spinbox.pack(side='left', padx=(0, self.SMALL_PADDING))
+        
+        max_deleted_label2 = tk.Label(
+            max_deleted_frame,
+            text="backups in Restore page",
+            font=("Segoe UI", int(10 * self.font_scale)),
+            fg=self.colors['secondary'],
+            bg=self.colors['card']
+        )
+        max_deleted_label2.pack(side='left', padx=(0, self.SMALL_PADDING))
+        
+        self.update_deleted_btn = self._create_button(
+            max_deleted_frame,
+            "Apply",
+            self._update_max_deleted_backups,
+            is_primary=False,
+            icon="✓",
+            compact=True
+        )
+        self.update_deleted_btn.pack(side='left')
+        
+        ToolTip(self.max_deleted_spinbox, "Maximum number of deleted backups to show in the Restore page")
+
     def _create_logging_section(self):
         """Create logging options section with improved card design."""
         self.logging_card = self._create_card_container(
             self.frame, 
-            row=2, 
+            row=3, 
             column=0, 
             sticky='ew', 
             padx=self.STANDARD_PADDING, 
@@ -459,7 +524,7 @@ class SettingsPage:
         """Create system information section with card design."""
         self.system_card = self._create_card_container(
             self.frame, 
-            row=3, 
+            row=4, 
             column=0, 
             sticky='ew', 
             padx=self.STANDARD_PADDING, 
@@ -492,7 +557,7 @@ class SettingsPage:
         system_info = {
             "Operating System": f"{platform.system()} {platform.release()}",
             "Python Version": platform.python_version(),
-            "Username": self.username,
+            "Username": self.username,  # Using system username
             "App Version": "1.0.0"  # You could pull this from a version file
         }
         
@@ -552,44 +617,6 @@ class SettingsPage:
                 bg=self.colors['card']
             )
             value_label.pack(side='left')
-
-    def _create_reset_section(self):
-        """Create reset to defaults section with card design."""
-        self.reset_card = self._create_card_container(
-            self.frame, 
-            row=4, 
-            column=0, 
-            sticky='ew', 
-            padx=self.STANDARD_PADDING, 
-            pady=(self.SMALL_PADDING, self.STANDARD_PADDING)
-        )
-        
-        # Container with right alignment
-        content = tk.Frame(self.reset_card, bg=self.colors['card'])
-        content.pack(fill='x', padx=self.STANDARD_PADDING, pady=self.STANDARD_PADDING)
-        
-        # Info label - left aligned
-        info_label = tk.Label(
-            content,
-            text="Reset all settings to their default values",
-            font=("Segoe UI", int(10 * self.font_scale)),
-            fg=self.colors['secondary'],
-            bg=self.colors['card']
-        )
-        info_label.pack(side='left')
-        
-        # Reset button - right aligned
-        self.reset_btn = self._create_button(
-            content,
-            "Reset to Defaults",
-            self._reset_to_defaults,
-            is_primary=False,
-            icon="⚠️"
-        )
-        self.reset_btn.pack(side='right')
-        
-        # Add tooltip
-        ToolTip(self.reset_btn, "Reset all settings to their default values (cannot be undone)")
 
     def _create_card_container(self, parent, row, column, sticky, padx, pady):
         """Create a card-like container with subtle shadow for sections."""
@@ -659,6 +686,25 @@ class SettingsPage:
         btn.is_primary = is_primary
         
         return btn
+        
+    def _update_max_deleted_backups(self):
+        """Update the maximum number of deleted backups to display."""
+        try:
+            max_deleted_value = int(self.max_deleted_var.get())
+            if max_deleted_value <= 0:
+                raise ValueError("Value must be positive")
+            
+            # Save the setting
+            if self.settings_manager.set("max_deleted_backups", max_deleted_value):
+                self.settings = self.settings_manager.settings  # Update reference
+                logging.info(f"Max deleted backups to show set to {max_deleted_value}")
+                self._show_success_message("Restore view settings updated successfully!")
+            else:
+                self._show_error_message("Failed to update restore view settings")
+                
+        except ValueError as e:
+            logging.error(f"Invalid value: {str(e)}")
+            self._show_error_message("Please enter a positive number")
 
     def _set_button_state(self, button, enabled=True):
         """Safely set button state while preserving hover effects."""
@@ -763,22 +809,6 @@ class SettingsPage:
         # Optional: show a subtle notification
         self._show_success_message(f"Backup compression {status}", duration=1000)
 
-    def _reset_to_defaults(self):
-        """Reset settings to defaults with confirmation."""
-        # Create modern confirmation dialog
-        confirm = self._create_confirm_dialog(
-            "Reset Settings", 
-            "Are you sure you want to reset all settings to defaults?",
-            "This action cannot be undone. Your current settings will be lost."
-        )
-        
-        if confirm:
-            self.settings_manager.reset_to_defaults()
-            self.settings = self.settings_manager.settings  # Update our reference
-            self._update_ui()
-            logging.info("Settings reset to defaults")
-            self._show_success_message("Settings reset to defaults!")
-
     def _clear_logs(self):
         """Clear log files with confirmation."""
         # Create modern confirmation dialog
@@ -798,7 +828,9 @@ class SettingsPage:
             # Clear main log file
             if os.path.exists(log_path):
                 with open(log_path, 'w') as f:
-                    f.write(f"Logs cleared on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} by {self.username}\n")
+                    # Use real username and current time
+                    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    f.write(f"Logs cleared on {current_time} by {self.username}\n")
             
             # Clear rotated logs
             for rotated_log in glob.glob(f"{log_path}.*"):
@@ -1133,7 +1165,7 @@ class SettingsPage:
             self._show_error_message("No log file to export")
             return
             
-        # Get timestamp for filename
+        # Get timestamp for filename - use current time
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         default_filename = f"logs_export_{timestamp}.txt"
         
@@ -1163,6 +1195,9 @@ class SettingsPage:
         
         self.max_backups_var.set(str(self.settings.get("max_backups", 10)))
         self.compress_var.set(self.settings.get("compress_backups", True))
+        
+        # Deleted backups setting
+        self.max_deleted_var.set(str(self.settings.get("max_deleted_backups", 10)))
         
         # Logging settings
         log_enabled = self.settings.get("logging_enabled", True)
