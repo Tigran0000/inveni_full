@@ -1,2 +1,3 @@
-# inveni/ui/dialogs/__init__.py
-from ui.dialogs.commit_dialog import QuickCommitDialog
+# inveni/ui/__init__.py
+# Make key classes available at the ui package level
+from ui.main_window import MainWindow
